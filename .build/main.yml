@@ -149,25 +149,6 @@ stages:
           testRunTitle: $(addonName)_$(addonVersion)
         condition: succeededOrFailed()
 
-      - task: GithubRelease@1 
-        displayName: 'Create GitHub Release'
-        condition: and(succeeded(), eq(${{variables.isMaster}}, true))
-        continueOnError: true
-        inputs:
-          gitHubConnection: 'github.com_chrisism'
-          repositoryName: chrisism/$(addonName)
-          action: 'create'
-          target: '$(Build.SourceVersion)'
-          tagSource: 'userSpecifiedTag'
-          tag: $(tagVersion)
-          title: $(Build.BuildNumber)
-          releaseNotesSource: filePath
-          releaseNotesFilePath: $(workingDirectory)/changelog.md  
-          addChangeLog: true
-          assets: |
-            $(build.artifactstagingdirectory)/package/*.*
-            $(workingDirectory)/README.md
-
 - stage: DeployStaging
   displayName: Deployment on Staging
   condition: and(succeeded(), or(eq(${{variables.isReleaseCandidate}}, true),eq(${{variables.isHotfix}}, true),eq(${{variables.isMaster}}, true)))
