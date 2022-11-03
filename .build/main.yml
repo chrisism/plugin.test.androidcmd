@@ -47,7 +47,7 @@ stages:
         
       steps:
       - checkout: self
-        depth: 1000
+        fetchDepth: 1000
 
       - task: gitversion/setup@0
         displayName: 'Install GitTools'
