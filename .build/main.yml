@@ -19,7 +19,7 @@
 #   - git_userName
 #   - github_token
 trigger:
-- master
+- main
 - release/*
 - hotfix/*
 - dev
@@ -34,7 +34,7 @@ variables:
   isDev: ${{eq(variables['Build.SourceBranch'], 'refs/heads/dev')}}
   isPR: ${{startsWith(variables['Build.SourceBranch'], 'refs/pull/')}}
   workingDirectory: '$(Build.SourcesDirectory)'
-  addonName: plugin.program.akl
+  addonName: plugin.test.androidcmd
 
 stages:
 - stage: Build
@@ -85,14 +85,6 @@ stages:
           PathToFile: 'addon.xml'
           RegEx: 'version="\d+\.\d+\.\d+.*" provider'
           ValueToReplace: 'version="$(addonVersion)" provider'
-
-      - bash: update_addon_news $(workingDirectory)/addon.xml $(workingDirectory)/changelog.md
-        displayName: 'Add changelog in addon.xml'
-        workingDirectory: '$(workingDirectory)'
-
-      - bash: 'python -m pytest --junitxml=$(build.artifactstagingdirectory)/$(addonName)_$(addonVersion)_testresults.xml' 
-        workingDirectory: '$(workingDirectory)'
-        displayName: 'Run tests'
               
       - task: CopyFiles@2
         displayName: 'Copy addon files for package'
@@ -191,31 +183,6 @@ stages:
           value: 'matrix'
         - name: branch_name
           value: main
-
-      strategy:     
-        runOnce:
-          deploy:
-            steps:
-              - template: publish_in_repository_steps.yml
-
-- stage: DeployProd
-  displayName: Deployment on Production
-  condition: and(succeeded(), eq(${{variables.isMaster}}, true))
-  jobs:
-    - deployment: Production
-      environment: 
-        name: Production
-
-      variables:
-        - group: repository.variables
-        - name: repository_url
-          value: github.com/chrisism/repository.chrisism.git
-        - name: repository_name
-          value: repository.chrisism
-        - name: repository_data_dir
-          value: 'matrix'
-        - name: branch_name
-          value: master
 
       strategy:     
         runOnce:
