@@ -7,7 +7,7 @@ import xbmcvfs
 import xbmcgui
 from contextlib import closing
 import json
-
+import collections
 class AndroidCommand(object):
     
     def __init__(self):
@@ -45,8 +45,22 @@ def execute_android(cmd: AndroidCommand):
 
     xbmc.log("Android CMD ENDS")    
 
+def cmd_dialog(cmd: AndroidCommand):    
+    options = []
+    xbmcgui.ListItem("Package", cmd.package)
+    xbmcgui.ListItem("Intent", cmd.intent)
+    
+    options.append()
+    options["PACKAGE"] = f"Package"
+    
+    dialog = xbmcgui.Dialog()
+    selection = dialog.select("COMMAND", [v for v in options.values()])       
+    if selection < 0: return None
+    
+    key = list(options.keys())[selection]
+       
 
-def runplugin(base_url, handle):
+def list_history(base_url, handle):
     
     data_dir = xbmcaddon.Addon().getAddonInfo('profile')
     xbmcvfs.mkdirs(data_dir)
@@ -61,6 +75,10 @@ def runplugin(base_url, handle):
                 cmd.load(jsonobj)
                 history_cmds.append(cmd)
     
+    url_str = f"{base_url}?cmd=NEW"
+    list_item = xbmcgui.ListItem("NEW")
+    xbmcplugin.addDirectoryItem(handle = handle, url = url_str, listitem = list_item, isFolder = False)
+    
     i = 0
     for history_cmd in history_cmds:
         list_item = xbmcgui.ListItem(history_cmd.get_name())
@@ -70,6 +88,9 @@ def runplugin(base_url, handle):
         
     xbmcplugin.endOfDirectory(handle = handle, succeeded = True, cacheToDisc = False)
 
+def runplugin(base_url, handle):
+    list_history(base_url, handle) 
+    
 try:
     base_url = sys.argv[0]
     if len(sys.argv) > 1 and sys.argv[1].isdigit():
