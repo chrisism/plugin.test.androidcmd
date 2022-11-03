@@ -7,6 +7,7 @@ import xbmcvfs
 import xbmcgui
 from contextlib import closing
 import json
+import urllib.parse
 
 history_cmds = []
 
@@ -40,9 +41,12 @@ class AndroidCommand(object):
 def execute_android(cmd: AndroidCommand):
     xbmc.log("Android CMD Starting ...", xbmc.LOGINFO)
 
+    history_cmds.append(cmd)
+
     data_dir = xbmcaddon.Addon().getAddonInfo('profile')
     xbmcvfs.mkdirs(data_dir)
     path = data_dir + "/history.json"    
+    
     with closing(xbmcvfs.File(path, 'w')) as fo:
         cmds_dicts = [cmd.__dict__ for cmd in history_cmds]
         fo.write(json.dumps(cmds_dicts))
@@ -52,7 +56,8 @@ def execute_android(cmd: AndroidCommand):
     xbmc.log(f"=============>>>> CMD: {command}")
     xbmc.executebuiltin(command, True)
 
-    xbmc.log("Android CMD ENDS")    
+    xbmc.log("Android CMD ENDS")  
+    xbmc.executebuiltin('Container.Refresh')  
 
 def cmd_dialog(cmd: AndroidCommand):    
     options = []
@@ -68,7 +73,7 @@ def cmd_dialog(cmd: AndroidCommand):
     options.append(xbmcgui.ListItem("EXECUTE", None, "EXECUTE"))
     
     dialog = xbmcgui.Dialog()
-    selection = dialog.select("COMMAND", options)       
+    selection = dialog.select("COMMAND", options, useDetails=True)       
     if selection < 0: return None
     
     selected_item:xbmcgui.ListItem = options[selection]
@@ -106,6 +111,8 @@ def list_history(base_url, handle):
                 cmd = AndroidCommand()
                 cmd.load(jsonobj)
                 history_cmds.append(cmd)
+
+    if len(history_cmds) > 
     
     url_str = f"{base_url}?cmd=NEW"
     list_item = xbmcgui.ListItem("NEW")
@@ -120,8 +127,15 @@ def list_history(base_url, handle):
         
     xbmcplugin.endOfDirectory(handle = handle, succeeded = True, cacheToDisc = False)
 
-def runplugin(base_url, handle):
-    list_history(base_url, handle) 
+def runplugin(base_url, handle, args):
+    list_history(base_url, handle)
+    if 'cmd' in args and args['cmd'][0] == "NEW":
+        cmd = AndroidCommand()
+        cmd_dialog(cmd)
+    if 'item' in args:
+        i = int(args['item'][0])
+        cmd = history_cmds[i]
+        cmd_dialog(cmd)
     
 try:
     history_cmds = []
@@ -130,10 +144,12 @@ try:
         handle = int(sys.argv[1])
     else:
         handle = -1
-    
-    if len(sys.argv) > 2:
-        pass
+
+    args = {}
+    if len(sys.argv) > 2 and sys.argv[2] != "":
+        args = urllib.parse.parse_qs(sys.argv[2][1:])
+        xbmc.log(f"ARGS: {args}", xbmc.LOGINFO)
         
-    runplugin(base_url, handle)
+    runplugin(base_url, handle, args)
 except Exception as ex:
     xbmc.log(f"General exception: {ex.message}", xbmc.LOGERROR)
