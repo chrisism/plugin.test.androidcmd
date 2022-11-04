@@ -112,7 +112,8 @@ def list_history(base_url, handle):
                 cmd.load(jsonobj)
                 history_cmds.append(cmd)
 
-    if len(history_cmds) > 
+    if len(history_cmds) > 25:
+        history_cmds.pop(0)
     
     url_str = f"{base_url}?cmd=NEW"
     list_item = xbmcgui.ListItem("NEW")
