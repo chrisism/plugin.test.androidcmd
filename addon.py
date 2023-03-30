@@ -1,4 +1,4 @@
-﻿# Tester script
+# Tester script
 import sys
 import xbmc
 import xbmcaddon
@@ -22,7 +22,7 @@ class AndroidCommand(object):
         self.dataType = ""
         self.dataURI = ""
         self.flags = ""
-        self.extras = []
+        self.extras = "[]"
         
     def get_name(self):
         return f"{self.package} | {self.intent} | {self.dataURI}"
@@ -51,7 +51,7 @@ def execute_android(cmd: AndroidCommand):
         cmds_dicts = [cmd.__dict__ for cmd in history_cmds]
         fo.write(json.dumps(cmds_dicts))
         
-    extras_json = json.dumps(cmd.extras)
+    extras_json = json.dumps(json.loads(cmd.extras))
     command = f'StartAndroidActivity("{cmd.package}", "{cmd.intent}", "{cmd.dataType}", "{cmd.dataURI}", "{cmd.flags}", "{extras_json}", "{cmd.action}", "{cmd.category}", "{cmd.className}")'
     xbmc.log(f"=============>>>> CMD: {command}")
     xbmc.executebuiltin(command, True)
@@ -69,7 +69,7 @@ def cmd_dialog(cmd: AndroidCommand):
     options.append(xbmcgui.ListItem("DataURI", cmd.dataURI, "DATAURI"))
     options.append(xbmcgui.ListItem("DataType", cmd.dataType, "DATATYPE"))
     options.append(xbmcgui.ListItem("Flags", cmd.flags, "FLAGS"))
-    options.append(xbmcgui.ListItem("Extras", json.dumps(cmd.extras), "EXTRAS"))
+    options.append(xbmcgui.ListItem("Extras (format: [{'key':key,'value',value,'type':valuetype}])", str(cmd.extras), "EXTRAS"))
     options.append(xbmcgui.ListItem("EXECUTE", None, "EXECUTE"))
     
     dialog = xbmcgui.Dialog()
@@ -80,8 +80,6 @@ def cmd_dialog(cmd: AndroidCommand):
     path = selected_item.getPath()
     if path == "EXECUTE":
         execute_android(cmd)
-    elif path == "EXTRAS":
-        pass
     else:
         keyboard = xbmc.Keyboard(selected_item.getLabel2(), selected_item.getLabel())
         keyboard.doModal()
@@ -95,7 +93,15 @@ def cmd_dialog(cmd: AndroidCommand):
             elif path == "DATATYPE": cmd.dataType = new_value
             elif path == "DATAURI": cmd.dataURI = new_value
             elif path == "FLAGS": cmd.flags = new_value
-    
+            elif path == "EXTRAS":
+                is_valid_json = False
+                try:
+                    valid_json = json.loads(new_value)
+                    is_valid_json = True
+                except Exception as exc:
+                    xbmc.log('Android Extras Exception: {}'.format(exc), xbmc.LOGERROR)
+                if is_valid_json:
+                    cmd.extras = new_value
     cmd_dialog(cmd)
 
 def list_history(base_url, handle):
